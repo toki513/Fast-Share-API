@@ -1,24 +1,48 @@
 from typing import Annotated
-from fastapi import FastAPI, HTTPException, Depends
+from fastapi import FastAPI, HTTPException, Depends, UploadFile, Form,File
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from db import get_db, engine, Base
 from models import Post
-from schemas import PostCreate
+from schemas import PostCreate,PostResponse
 from contextlib import asynccontextmanager
 
-# Lifespan manager for startup/shutdown
+
 @asynccontextmanager
-async def lifespan(_app: FastAPI):
-    # Startup: create tables
+async def lifespan(_app:FastAPI):
+    
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
     yield
-    # Shutdown: dispose engine
+    
     await engine.dispose()
 
-app = FastAPI(lifespan=lifespan)
+app= FastAPI(lifespan=lifespan)
 
+
+
+@app.post("/uploads")
+async def upload_file(file:UploadFile=File(...),caption:str=Form(""),
+                      db:AsyncSession=Depends(get_db)):
+    post=Post(
+        caption=caption,
+        url="dummy Url"
+    )
+    db.add(post)
+    await db.commit()
+    await db.refresh(post)
+    return post
+
+
+@app.get("/feed",response_model=PostResponse)
+async def get_feed(db:Annotated[AsyncSession,Depends(get_db)]):
+    result = await db.execute(select(Post).order_by(Post.created_at.desc()))
+    posts=result.scalars().all()
+    
+    return posts
+        
+       
+    
 
 # GET all posts
 @app.get("/posts")
