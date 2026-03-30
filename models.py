@@ -13,4 +13,6 @@ class Post(Base):
     id = Column(Integer,primary_key=True)
     caption = Column(Text)
     url=Column(String)
+    file_type=Column(String)
+    file_name=Column(String)
     created_at=Column(DateTime,default=datetime.utcnow)
