@@ -95,7 +95,7 @@ async def delete_post(post_id:int,db:Annotated[AsyncSession,Depends(get_db)]):
     post=result.scalars().first()
     
     if not post:
-       
+        raise HTTPException(status_code=404,detail="Post not found")
 
     await db.delete(post)
     await db.commit()
